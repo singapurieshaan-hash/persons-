@@ -18,7 +18,7 @@ const App = () => {
   useEffect(() => {
     console.log('effect')
     axios
-      .get('http://localhost:3001/api/persons')
+      .get('/api/persons')
       .then(response => {
         console.log('promise fulfilled')
         setPersons(response.data)
@@ -53,7 +53,7 @@ const App = () => {
 
      if(confirmed) {
       axios. 
-        delete(`http://localhost:3001/api/persons/${id}`)
+        delete(`/api/persons/${id}`)
         .then(() => {
           setPersons(persons.filter(person => person.id !== id))
         })
@@ -77,7 +77,7 @@ const App = () => {
       }
 
       axios
-        .put(`http://localhost:3001/api/persons/${existingPerson.id}`, updatedPerson)
+        .put(`/api/persons/${existingPerson.id}`, updatedPerson)
         .then(response => {
           setPersons(
             persons.map(person =>
@@ -99,7 +99,7 @@ const App = () => {
   }
 
   axios
-    .post('http://localhost:3001/api/persons', nameObject)
+    .post('/api/persons', nameObject)
     .then(response => {
       setPersons(persons.concat(response.data))
       setNewName('')
