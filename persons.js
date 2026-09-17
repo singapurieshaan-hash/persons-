@@ -1,91 +1,124 @@
 import express from 'express'
+import dotenv from 'dotenv'
 
+dotenv.config()
+
+import Phone from './models/phone.js'
 
 const app = express()
-
 
 app.use(express.json())
 app.use(express.static('dist'))
 
-let phone = [
-    { 
-      "id": "1",
-      "name": "Arto Hellas", 
-      "number": "040-123456"
-    },
-    { 
-      "id": "2",
-      "name": "Ada Lovelace", 
-      "number": "39-44-5323523"
-    },
-    { 
-      "id": "3",
-      "name": "Dan Abramov", 
-      "number": "12-43-234345"
-    },
-    { 
-      "id": "4",
-      "name": "Mary Poppendieck", 
-      "number": "39-23-6423122"
+
+app.get('/api/persons', (request, response, next) => {
+  Phone.find({})
+    .then(people => {
+      response.json(people)
+    })
+    .catch(error => next(error))
+})
+
+
+app.get('/info', (request, response, next) => {
+  Phone.countDocuments({})
+    .then(count => {
+      response.send(
+        `Phonebook has info for ${count} people, ${new Date()}.`
+      )
+    })
+    .catch(error => next(error))
+})
+
+
+app.get('/api/persons/:id', (request, response, next) => {
+  const id = request.params.id
+
+  Phone.findById(id)
+    .then(phon => {
+      if (phon) {
+        response.json(phon)
+      } else {
+        response.status(404).end()
+      }
+    })
+    .catch(error => next(error))
+})
+
+
+app.delete('/api/persons/:id', (request, response, next) => {
+  const id = request.params.id
+
+  Phone.findByIdAndDelete(id)
+    .then(() => {
+      response.status(204).end()
+    })
+    .catch(error => next(error))
+})
+
+
+app.post('/api/persons', (request, response, next) => {
+  const indi = request.body
+
+  if (!indi.number || !indi.name) {
+    return response.status(400).json({
+      error: 'content missing'
+    })
+  }
+
+  const phon = new Phone({
+    number: indi.number,
+    name: indi.name
+  })
+
+  phon.save()
+    .then(savedPhone => {
+      response.json(savedPhone)
+    })
+    .catch(error => next(error))
+})
+
+
+app.put('/api/persons/:id', (request, response, next) => {
+  const indi = request.body
+
+  const person = {
+    name: indi.name,
+    number: indi.number
+  }
+
+  Phone.findByIdAndUpdate(
+    request.params.id,
+    person,
+    {
+      new: true,
+      runValidators: true
     }
-]
-
-
-
-app.get('/api/persons', (request, response) => {
-    response.json(phone)
+  )
+    .then(updatedPerson => {
+      response.json(updatedPerson)
+    })
+    .catch(error => next(error))
 })
 
-app.get('/info', (request, response) => {
-    response.send(`Phonebook has info for ${phone.length} people, ${new Date()}.`)
-})
 
-app.get('/api/persons/:id', (request, response) => {
-    const id = request.params.id 
-    phon = phone.find(phon => phon.id === id)
-    response.json(phon)
-})
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message)
 
-app.delete('/api/persons/:id', (request, response) => {
-    const id = request.params.id 
-    phone = phone.filter(phon => phon.id !== id)
+  if (error.name === 'ValidationError') {
+    return response.status(400).json({
+      error: error.message
+    })
+  }
 
-    response.status(204).end()
-})
-
-const generateId = () => {
-    const maxId = phone.length > 0 
-    ? Math.max(...phone.map(n => Number(n.id)))
-    : 0 
-    return (String(maxId + 1))
+  next(error)
 }
 
-app.post('/api/persons', (request, response) => {
-    
-    const indi = request.body 
+app.use(errorHandler)
 
-    if (!indi.number || !indi.name || phone.find(phon =>
-  phon.name.toLowerCase() === indi.name.toLowerCase())) {
-      return response.status(400).json({ 
-        error: 'content missing' 
-      })
-    }
-    
-    const phon = {
-      number: indi.number,
-      name: indi.name, 
-      id: generateId()
-    }
 
-    phone = phone.concat(phon)
+const PORT = process.env.PORT || 3001
 
-    response.json(phon)
-})
-
-const PORT = process.env.PORT || 3001 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
-
-
-
